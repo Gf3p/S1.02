@@ -1,6 +1,9 @@
 import extensions.CSVFile;
 class CourseAuxPt extends Program{
-    final String[] PIONS= new String[]{"♙","♟"};
+    final String[] PIONS= new String[]{"♙","♟","♙","♟"};
+    final String[] FLECHES = new String[]{"←","↑","→","↓"};
+    final String BARRE = " - - - +";
+    int nbJoueur;
 
     Joueur newJoueur(String nom, int[] pos, int nbStar, int points){ //  Fonction qui crée un objet Joueur
         Joueur j = new Joueur();
@@ -32,11 +35,13 @@ class CourseAuxPt extends Program{
     }
 
     Joueur[] creationJoueurs(){ //  Crée un tableau de l'enssemble des joueurs de la partie
-        Joueur[] joueurs = new Joueur[2];
+        Joueur[] joueurs;
         println("Voulez-vous charger une sauvegarde ? (o/n)");
         if(readChar()=='o'){
             joueurs = chargerSave();
         }else{
+            nbJoueur = readInt(); // !!  Créer une fonct qui verif si nbJoueur  >= 2 et <=4
+            joueurs = new Joueur[nbJoueur];
             int idxJ = 0;
             while(idxJ<length(joueurs)){
                 println("Entrez le nom du Joueur " + (idxJ+1));
@@ -78,10 +83,12 @@ class CourseAuxPt extends Program{
     }
 
     Case[][] initialiserPlateau(){ //  Crée un plateau en suivant le plan donnée par plateau.csv
-        Case[][] plateau = new Case[3][3];
-        CSVFile p = loadCSV("ressources/plateau.csv");
-        for(int i  = 0; i<rowCount(p) ; i++){
-            for(int j  = 0; j<columnCount(p); j++){
+        CSVFile p = loadCSV("plateau.csv");
+        int nbRow = rowCount(p);
+        int nbCol = columnCount(p);
+        Case[][] plateau = new Case[nbRow][nbCol];
+        for(int i  = 0; i<nbRow; i++){
+            for(int j  = 0; j<nbCol; j++){
                 plateau[i][j]=chargerCase(getCell(p,i,j));
             }
         }
@@ -92,31 +99,76 @@ class CourseAuxPt extends Program{
         return joueur1.position[0]==x && joueur1.position[1]==y;
     }
 
+    String tableauLigneCase(String[] ligne){
+        String res="";
+        for(int i = 0; i < length(ligne) ;i++){
+            res+=ligne[i]+"\n";
+        }
+        return res;
+    }
+
+    String[] creerCase(Case c, String[] joueurAPlacer,String[] ligne){
+        int idx = 0;
+        ligne[0]+=joueurAPlacer[idx];
+        idx++;
+        ligne[0]+="  ";
+        if(c.directions[1]){
+            ligne[0]+=FLECHES[1];
+        }else{
+            ligne[0]+=" ";
+        }
+        ligne[0]+="  ";
+        ligne[0]+=joueurAPlacer[idx]+"|";
+        if(c.directions[0]){
+            ligne[1]+=FLECHES[0]+"  ";
+        }else{
+            ligne[1]+="   ";
+        }
+        if(equals(c.contenu,"Star")){
+            ligne[1]+="★";
+        }else{
+            ligne[1]+=" ";
+        }
+        if(c.directions[2]){
+            ligne[1]+="  "+FLECHES[2];
+        }else{
+            ligne[1]+="   ";
+        }
+        ligne[1]+="|";
+        idx++;
+        ligne[2]+=joueurAPlacer[idx];
+        ligne[2]+="  ";
+        if(c.directions[3]){
+            ligne[2]+=FLECHES[3];
+        }else{
+            ligne[2]+=" ";
+        }
+        ligne[2]+="  "; 
+        idx++;
+        ligne[2]+=joueurAPlacer[idx]+"|";
+        return ligne;
+    }
+
     String plateauToString(Case[][] plateau,Joueur[] joueurs){ //  Renvoie le plateau sous forme de String pour permettre un affichage
         String res="";
+        String bordureHoriz = "+";
         for(int i = 0; i<length(plateau,1);i++){
+            bordureHoriz = "+";
+            String[] ligne = new String[]{"|","|","|"};
             for(int j = 0; j<length(plateau,2);j++){
-                res+=" | ";
-                if(!plateau[i][j].accessible){
-                    res+=" X ";
-                }else{
-                    if(plateau[i][j].contenu != "" && equals(plateau[i][j].contenu,"Star")){
-                        res+="★"; // Place les joueurs sur le plateau
-                    }else{
-                        res+=" ";
-                    }
-                    for(int k = 0; k<length(joueurs);k++){ // Place les joueurs sur le plateau
-                        if(joueurEstIci(joueurs[k],i , j)){ //  Verifie si un joueur est présent sur la caes (i,j)
-                            res+=PIONS[k];
-                        }else{
-                            res+=" ";
-                        }
+                String[] joueurAPlacer = new String[]{" "," "," "," "};
+                bordureHoriz+=BARRE;
+                for(int k = 0; k<length(joueurs); k++){
+                    if(joueurs[k].position[0]==i && joueurs[k].position[1]==j){
+                        joueurAPlacer[k]=PIONS[k];
                     }
                 }
+                ligne = creerCase(plateau[i][j],joueurAPlacer,ligne);
             }
-            res+=" |";
-            res+="\n\n";
+            res+=tableauLigneCase(ligne);
+            res+=bordureHoriz+"\n";
         }
+        res = bordureHoriz + "\n" + res;
         return res;
     }
 
@@ -181,28 +233,29 @@ class CourseAuxPt extends Program{
     }
 
     void poseQuestion(Joueur j,String filename){ //  Pose une question et attribue 
-        Question q = chargerQuestion("ressources/"+filename);
+        Question q = chargerQuestion(filename);
         println(q.contenu);
         if(!equals(q.qcm,"false")){
             println(q.qcm);
         }
         long tempsDep = getTime(); 
         String repJ = readString();
-        if(equals(repJ,q.reponse)){  //  Verifie si la réponse du joueur est la bonne réponse
+        clearScreen();
+        if(equals(toLowerCase(repJ),q.reponse)){  //  Verifie si la réponse du joueur est la bonne réponse
             long tempsfin = getTime();
             long tempsRep = (tempsfin-tempsDep)/1000; //  Calcul le temps de réponse 
             if(tempsRep<=0){ //  Evite de diviser par un temps en seconde égal à 0
                 tempsRep=1;
             }
-            println("Vous avez répondu en " + tempsRep + "s");
             j.points += 1000/tempsRep;;
-            println("Bonnne réponse +" + 1000/tempsRep + " Points ! ");
+            println("Bonnne réponse vous avez répondu en " + tempsRep + "s \n Vous gagnez : " + 1000/tempsRep + " Points ! ");
         }else{
             println("Mauvaise réponse. Pas de Points, la réponse était : " + q.reponse);
         }
     }
 
-    void affichageStatPartie(Joueur[] joueurs){
+    void affichageStatPartie(Joueur[] joueurs, int tour){
+        println("Tour de " + PIONS[tour] +joueurs[tour].nom);
         for(int i = 0; i<length(joueurs) ; i++){
             println("   "+ PIONS[i] + " - " + joueurs[i].nom + " " + joueurs[i].points + "pt " + joueurs[i].nbStar + "★");
         }
@@ -237,7 +290,9 @@ class CourseAuxPt extends Program{
             }
         }
     }
+    void controleValidation(){
 
+    }
     void sauvegarde(Joueur[] joueurs,int tour){ //  Sauvegarde les joueurs dans un fichier avec le nom
         println("Donnez un nom à la sauvegarde : ");
         String filename = readString();
@@ -254,12 +309,14 @@ class CourseAuxPt extends Program{
             jeu[i][5] = tour + ""; // Permet de sauvegarder et de savoir à qui c'était le tour en modifiant l'ordre du Joueur dans la liste joueurs lors du chargement de la sauvegarde pour une prochaine partie
             tour++;
         }
-        saveCSV(jeu,filename+"_save"+".csv");
+        saveCSV(jeu,"save/"+filename+".csv");
     }
 
     Joueur[] chargerSave(){ //  récupert la sauvegarde des joueurs de la partie précédente
-        println("Entrez le nom de la sauvegarde");
-        CSVFile save = loadCSV(readString() + "_save"+ ".csv");
+        String[] listeSave = getAllFilesFromDirectory("save");
+        println(listerSave(listeSave) + "\nEntrez le numéro de la sauvegarde");
+        int idxsave = readInt()-1;
+        CSVFile save = loadCSV("save/"+listeSave[idxsave]);
         Joueur[] joueurs = new Joueur[rowCount(save)];
         for(int i = 0; i<length(joueurs) ;i++){
             int idxJ = stringToInt(getCell(save,i,5));
@@ -271,47 +328,34 @@ class CourseAuxPt extends Program{
         }
         return joueurs;
     }
-
-    final String[] FLECHES = new String[]{"←","↑","→","↓"};
-    final String BARRE = "+ - - - +";
-    int nbJoueur = 2;
-    String creerCase(Case c, String[] joueurAPlacer){
-        String res = BARRE;
-        int joueurPlace = 0;
-        res+="|";
-        if(length(joueurAPlacer)>joueurPlace){
-            res+=joueurAPlacer[joueurPlace];
-            res+= " ";
-            joueurPlace++;
+    String listerSave(String[] listeSave){
+        String res = "";
+        String save;
+        for(int i = 1; i < length(listeSave)+1; i++){
+            save = listeSave[i-1];
+            res += i+") "+substring(save,0,length(save)-4)+"\n";
         }
-        if(c.directions[2]){
-            res+=FLECHES[2] + " ";
-        }else{
-            res+="  ";
-        }
-        if(length(joueurAPlacer)>joueurPlace){
-            res+=joueurAPlacer[joueurPlace];
-            
-        }else{
-            joueurPlace++;
-        }
+        return res;
     }
-
     void algorithm(){
         Joueur[] joueurs = creationJoueurs();
         Case[][] plateau = initialiserPlateau();
-        int tour = 0;
+        int idxTourJoueur = 0;
+        clearScreen();
         while(joueurs[0].nbStar<1 && joueurs[1].nbStar<1){
-            println("Tour de " + joueurs[tour].nom);
-            affichageStatPartie(joueurs);
+            affichageStatPartie(joueurs,idxTourJoueur);
             println(plateauToString(plateau,joueurs));
-            controleSaisi(joueurs,tour,plateau);
+            controleSaisi(joueurs,idxTourJoueur,plateau);
+            clearScreen();
+            affichageStatPartie(joueurs,idxTourJoueur);
             println(plateauToString(plateau,joueurs));
-            poseQuestion(joueurs[tour],"questions.csv");
-            verifStar(joueurs[tour], donneCaseJoueur(joueurs[tour],plateau));
-            tour++;
-            if(tour>length(joueurs)-1){
-                tour=0;
+            poseQuestion(joueurs[idxTourJoueur],"questions.csv");
+            delay(3000);
+            clearScreen();
+            verifStar(joueurs[idxTourJoueur], donneCaseJoueur(joueurs[idxTourJoueur],plateau));
+            idxTourJoueur++;
+            if(idxTourJoueur>length(joueurs)-1){
+                idxTourJoueur=0;
             }
         }
         println(maxStar(joueurs).nom + " a Gagné !");
