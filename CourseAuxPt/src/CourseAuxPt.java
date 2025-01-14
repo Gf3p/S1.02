@@ -302,6 +302,17 @@ class CourseAuxPt extends Program{
         return nbJoueur;
     }
 
+    int controleSaisi(int idxDeb,int idxFin,String question){//Controle si l'indexe saisie est dans la liste et est valide 
+        println(question);
+        int val = readInt();
+        while(val < idxDeb || val > idxFin){
+            println("Entrée invalide !");
+            println(question);
+            val = readInt();
+        }
+        return val;
+    }
+
     boolean controleValidation(String question){
         println(question);
         String entree = readString();
@@ -353,8 +364,8 @@ class CourseAuxPt extends Program{
 
     Joueur[] chargerSave(){ //  récupert la sauvegarde des joueurs de la partie précédente
         String[] listeSave = getAllFilesFromDirectory("save");
-        println(listerSave(listeSave) + "\nEntrez le numéro de la sauvegarde");
-        int idxsave = readInt()-1;
+        println(listerSave(listeSave));
+        int idxsave = controleSaisi(1,length(listeSave),"Entrez le numéro de la sauvegarde")-1;
         CSVFile save = loadCSV("save/"+listeSave[idxsave]);
         Joueur[] joueurs = new Joueur[rowCount(save)];
         for(int i = 0; i<length(joueurs) ;i++){
