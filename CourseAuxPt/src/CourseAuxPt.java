@@ -22,11 +22,10 @@ class CourseAuxPt extends Program{
         return c;
     }
 
-    Question newQuestion(String contenu,String reponse ,String qcm){ //  Fonction qui crée un objet Question
+    Question newQuestion(String contenu,String reponse){ //  Fonction qui crée un objet Question
         Question q = new Question();
         q.contenu = contenu;
         q.reponse = reponse;
-        q.qcm = qcm;
         return q;
     }
  
@@ -36,11 +35,10 @@ class CourseAuxPt extends Program{
 
     Joueur[] creationJoueurs(){ //  Crée un tableau de l'enssemble des joueurs de la partie
         Joueur[] joueurs;
-        println("Voulez-vous charger une sauvegarde ? (o/n)");
-        if(readChar()=='o'){
+        if(controleValidation("Voulez-vous charger une sauvegarde ? (o/n)")){
             joueurs = chargerSave();
         }else{
-            nbJoueur = readInt(); // !!  Créer une fonct qui verif si nbJoueur  >= 2 et <=4
+            int nbJoueur = controleNbJoueur();
             joueurs = new Joueur[nbJoueur];
             int idxJ = 0;
             while(idxJ<length(joueurs)){
@@ -228,16 +226,13 @@ class CourseAuxPt extends Program{
     Question chargerQuestion(String filename){ //  Retourne un objet Question du fichier questions.csv
         CSVFile questions = loadCSV(filename);
         int noQuest = (int)(random()*rowCount(questions)); //  Donne l'indice d'une question aleatoire 
-        Question q = newQuestion(getCell(questions,noQuest,0),getCell(questions,noQuest,1),getCell(questions,noQuest,2));
+        Question q = newQuestion(getCell(questions,noQuest,0),getCell(questions,noQuest,1));
         return q;
     }
 
     void poseQuestion(Joueur j,String filename){ //  Pose une question et attribue 
         Question q = chargerQuestion(filename);
         println(q.contenu);
-        if(!equals(q.qcm,"false")){
-            println(q.qcm);
-        }
         long tempsDep = getTime(); 
         String repJ = readString();
         clearScreen();
@@ -277,22 +272,66 @@ class CourseAuxPt extends Program{
         println("g - Aller sur la case à gauche  h - Aller sur la case en haut    d - Aller sur la case à droite     b - Aller sur la case en bas     s - Pour Sauvegarder ");
         println("Entrez une lettre pour réaliser une action :");
         while(!valide){
-            char entree = readChar();
-            if(entree == 's'){
-                sauvegarde(joueurs,idxJ);
-                controleSaisi(joueurs ,idxJ ,plateau);
-                valide = true;
-            }else if((entree == 'g' || entree == 'h'|| entree == 'd' ||entree == 'b') && deplacementValide(plateau, joueurs[idxJ] , entree)){
-                realiseDepla(plateau ,joueurs[idxJ] ,entree);
-                valide = true;
+            String temp = readString();
+            if(temp != "" && length(temp) < 2){
+                char entree = charAt(temp,0);
+                if(entree == 's'){
+                    sauvegarde(joueurs,idxJ);
+                    controleSaisi(joueurs ,idxJ ,plateau);
+                    valide = true;
+                }else if((entree == 'g' || entree == 'h'|| entree == 'd' ||entree == 'b') && deplacementValide(plateau, joueurs[idxJ] , entree)){
+                    realiseDepla(plateau ,joueurs[idxJ] ,entree);
+                    valide = true;
+                }else{
+                    println("Entrez une lettre valide.");
+                }
             }else{
                 println("Entrez une lettre valide.");
             }
         }
     }
-    void controleValidation(){
 
+    int controleNbJoueur(){
+        println("Entrez le nombre de joueur");
+        int nbJoueur = readInt();
+        while(nbJoueur < 2 || nbJoueur > 4){
+            println("Entrez invalide le nombre de joueurs doit être entre 2 et 4");
+            println("Entrez le nombre de joueur");
+            nbJoueur = readInt();
+        }
+        return nbJoueur;
     }
+
+    boolean controleValidation(String question){
+        println(question);
+        String entree = readString();
+        boolean res = true;
+        char val ;
+        boolean entreeValide = false;
+        while(!entreeValide){
+            if(length(entree)==1){
+                val =  charAt(entree,0);
+                if(val != 'o' && val != 'O' && val != 'n' && val != 'N'){
+                    println("Entrée invalide !");
+                    println(question);
+                    entree = readString();
+                    val  = charAt(entree,0);
+                }else{
+                    entreeValide = true;
+                    if(val != 'o' && val != 'O'){
+                        res = false;
+                    }
+                }
+            }else{
+                println("Entrée invalide !");
+                    println(question);
+                    entree = readString();
+                    val = charAt(entree,0);
+            }
+        }
+        return res;
+    }
+
     void sauvegarde(Joueur[] joueurs,int tour){ //  Sauvegarde les joueurs dans un fichier avec le nom
         println("Donnez un nom à la sauvegarde : ");
         String filename = readString();
@@ -338,6 +377,7 @@ class CourseAuxPt extends Program{
         return res;
     }
     void algorithm(){
+        clearScreen();
         Joueur[] joueurs = creationJoueurs();
         Case[][] plateau = initialiserPlateau();
         int idxTourJoueur = 0;
