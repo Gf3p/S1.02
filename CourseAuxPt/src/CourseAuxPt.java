@@ -1,6 +1,6 @@
 import extensions.CSVFile;
 class CourseAuxPt extends Program{
-    final String[] PIONS= new String[]{"♙","♟","♙","♟"};
+    final String[] PIONS= new String[]{"♙","♟","♖","♜"};
     final String[] FLECHES = new String[]{"←","↑","→","↓"};
     final String BARRE = " - - - +";
     int nbJoueur;
@@ -11,6 +11,7 @@ class CourseAuxPt extends Program{
         j.position=pos;
         j.nbStar=nbStar;
         j.points=points;
+        j.inventaire=new Objet[]{newObjet("nom", '♟', Effet.VOLER, 3,  false, 56)};
         return j;
     }
 
@@ -28,9 +29,20 @@ class CourseAuxPt extends Program{
         q.reponse = reponse;
         return q;
     }
- 
+    
+    Objet newObjet(String nom, char icon, Effet effet, int effet_value, boolean actif, int durabilite){
+        Objet o = new Objet();
+        o.nom = nom;
+        o.icon = icon;
+        o.effet = effet;
+        o.effet_value = effet_value;
+        o.actif = actif;
+        o.durabilite = durabilite;
+        return o;
+    }
+    
     Joueur saisiJoueur(String nom){ //  Définit un joueur avec le nom entrée en paramètre
-        return newJoueur(nom, new int[]{0,0},0 , 3000);
+        return newJoueur(nom, new int[]{0,0},0 , 10000000);
     }
 
     Joueur[] creationJoueurs(){ //  Crée un tableau de l'enssemble des joueurs de la partie
@@ -74,7 +86,7 @@ class CourseAuxPt extends Program{
         if(charAt(c,4)=='b'){
             caseDir[3] = true;
         }
-        if(equals(c,"     ")){
+        if(equals(substring(c,1,length(c)),"    ")){
             accessible  = false;
         }
         return newCase(caseDir, caseCont , accessible);
@@ -169,6 +181,27 @@ class CourseAuxPt extends Program{
         res = bordureHoriz + "\n" + res;
         return res;
     }
+    int nbToursPartie(){
+        boolean valide = false;
+        int nbTours = 0;
+        while(!valide){
+            println("Combiez de tour voulez-vous que la Partie dure ?");
+            nbTours = readInt();
+            if(nbTours > 0 && nbTours <= 100){
+                valide = true;
+            }else{
+                println("Le nombre de tours ne peut pas être plus de 100");
+            }
+        }
+        return nbTours;
+    }
+    String inventaireToString(Objet[] inv){
+        String res="Inventaire\n\n";
+        for(int i = 0; i<length(inv); i++){
+            res+=i+1+")  "+inv[i].icon+"  "+inv[i].nom+"\n";
+        }
+        return res;
+    }
 
     Case donneCaseJoueur(Joueur j, Case[][] plateau){ //  Renvoie l'objet Case sur laquelle est l'objet Joueur j 
         return plateau[j.position[0]][j.position[1]];
@@ -209,18 +242,55 @@ class CourseAuxPt extends Program{
         j.position[0] += deplacement[0];
         j.position[1] += deplacement[1];
     }
-
-    void verifStar(Joueur j, Case c){ //  Verifie si le joueur J est sur une Case c contenant un étoile, puis verifie si le joueur j a assez de points et lui propose de l'acheter
-        if(equals(c.contenu,"Star") && j.points >= 3000){
-            println("Vous avez assez de points pour acheter l'étoile. Voulez-vous l'acheter pour 3 000 pt ? (o/n)");
-            if(readChar()=='o'){
+    boolean joueurSurStar(int[] cooStar, int[] cooJoueur){
+        return cooStar[0] == cooJoueur[0] && cooStar[1] == cooJoueur[1];
+    }
+    void verifStar(Joueur j, Case[][] plateau, int[] cooStarActu){ //  Verifie si le joueur J est sur une Case c contenant un étoile, puis verifie si le joueur j a assez de points et lui propose de l'acheter
+        if(j.points >= 3000){
+            if(controleValidation("Vous avez assez de points pour acheter l'étoile. Voulez-vous l'acheter pour 3 000 pt ? (o/n)")){
                 j.points-=3000;
                 j.nbStar++;
-                } 
-        }else if(equals(c.contenu,"Star")){
+                modifeIdxStar(plateau, cooStarActu);
+            } 
+        }else{
             println("Vous n'avez pas assez de points pour acheter l'étoile.");
             
         }
+    }
+
+    int[] donneIdxStar(Case[][] plateau){
+        int[] coo = new int[2];
+        for(int i = 0; i<length(plateau,1); i++){
+            for(int j = 0; j<length(plateau,2); j++){
+                if(equals(plateau[i][j].contenu,"Star")){
+                    coo[0] = i;
+                    coo[1] = j;
+                }
+            }
+        }
+        return coo;
+    }
+
+    int[] donneCooRandom(int lengthX, int lengthY){
+        int x = (int)(lengthX*random());
+        int y = (int)(lengthY*random());
+        int[] coo = new int[]{x,y};
+        return coo;
+    }
+
+    void modifeIdxStar(Case[][] plateau, int[] cooStarActu){
+        plateau[cooStarActu[0]][cooStarActu[1]].contenu = "";
+        int[] newCoo = donneCooRandom(length(plateau,1),length(plateau,1));
+        boolean place = false;
+        while(!place){
+            if(plateau[newCoo[0]][newCoo[1]].accessible){
+                plateau[newCoo[0]][newCoo[1]].contenu = "Star";
+                place = true;
+            }else{
+                newCoo = donneCooRandom(length(plateau,1),length(plateau,1));
+            }
+        }
+        cooStarActu = newCoo;
     }
 
     Question chargerQuestion(String filename){ //  Retourne un objet Question du fichier questions.csv
@@ -257,35 +327,55 @@ class CourseAuxPt extends Program{
         println();
     }
 
-    Joueur maxStar(Joueur[] joueurs){ //  Donne le joueurs avec le plus d'étoiles
-        int idxJ = 0;
+    String maxStar(Joueur[] joueurs){ //  Donne le joueurs avec le plus d'étoiles
+        int nbGagnant = 1;
+        Joueur[] gagnants = new Joueur[length(joueurs)];
+        gagnants[0] = joueurs[0];
         for(int i = 1; i<length(joueurs); i++){
-            if(joueurs[i].nbStar>joueurs[idxJ].nbStar){
-                idxJ=i;
+            if(joueurs[i].nbStar > gagnants[0].nbStar){
+                gagnants = new Joueur[length(joueurs)];
+                gagnants[0] = joueurs[i];
+                nbGagnant = 1;
+            }else if((joueurs[i].nbStar == gagnants[0].nbStar)){
+                gagnants[nbGagnant] = joueurs[i];
+                nbGagnant++;
             }
         }
-        return joueurs[idxJ];
+        String res = gagnants[0].nom;
+        for(int j = 1; j<nbGagnant; j++){
+            res += "   et   "+gagnants[j].nom;
+        }
+        return res;
     }
 
-    void controleSaisi(Joueur[] joueurs,int idxJ,Case[][] plateau){ //  Contrôle la saisi du joueur et réalise des actions en fonction de la saisie
+    void controleSaisi(Joueur[] joueurs,int idxJ,Case[][] plateau,String plateauAffichable){ //  Contrôle la saisi du joueur et réalise des actions en fonction de la saisie
         boolean valide = false;
-        println("g - Aller sur la case à gauche  h - Aller sur la case en haut    d - Aller sur la case à droite     b - Aller sur la case en bas     s - Pour Sauvegarder ");
-        println("Entrez une lettre pour réaliser une action :");
+        clearScreen();
         while(!valide){
-            String temp = readString();
+            affichageStatPartie(joueurs,idxJ);
+            println(plateauAffichable);
+            println("g - Aller sur la case à gauche \nh - Aller sur la case en haut \nd - Aller sur la case à droite \nb - Aller sur la case en bas \ns - Pour Sauvegarder \ni - Pour accéder à l'inventaire");
+            println("Entrez une lettre pour réaliser une action :");
+            String temp = toLowerCase(readString());
             if(temp != "" && length(temp) < 2){
                 char entree = charAt(temp,0);
                 if(entree == 's'){
                     sauvegarde(joueurs,idxJ);
-                    controleSaisi(joueurs ,idxJ ,plateau);
-                    valide = true;
+                    clearScreen();
                 }else if((entree == 'g' || entree == 'h'|| entree == 'd' ||entree == 'b') && deplacementValide(plateau, joueurs[idxJ] , entree)){
                     realiseDepla(plateau ,joueurs[idxJ] ,entree);
                     valide = true;
+                }else if(entree == 'i'){
+                    clearScreen();
+                    println(inventaireToString(joueurs[idxJ].inventaire));
+                    println("Appuyer sur Entrer pour quitter l'inventaire");
+                    readString();
                 }else{
+                    clearScreen();
                     println("Entrez une lettre valide.");
                 }
             }else{
+                clearScreen();
                 println("Entrez une lettre valide.");
             }
         }
@@ -347,17 +437,18 @@ class CourseAuxPt extends Program{
         println("Donnez un nom à la sauvegarde : ");
         String filename = readString();
         String[][] jeu = new String[length(joueurs)][6];
-        for(int i = 0; i<length(joueurs); i++){
+        int temp;
+        for(int i = length(joueurs)-1; i>-1; i--){
             jeu[i][0] = joueurs[i].nom;
             jeu[i][1] = joueurs[i].position[0] + "";
             jeu[i][2] = joueurs[i].position[1] + "";
             jeu[i][3] = joueurs[i].nbStar + "";
             jeu[i][4] = joueurs[i].points + "";
-            if(tour>length(joueurs)-1){
-                tour=0;
+            if((i-tour)<0){
+                tour = - length(joueurs) + 1;
             }
-            jeu[i][5] = tour + ""; // Permet de sauvegarder et de savoir à qui c'était le tour en modifiant l'ordre du Joueur dans la liste joueurs lors du chargement de la sauvegarde pour une prochaine partie
-            tour++;
+            temp = i - tour;
+            jeu[i][5] = temp + ""; // Permet de sauvegarder et de savoir à qui c'était le tour en modifiant l'ordre du Joueur dans la liste joueurs lors du chargement de la sauvegarde pour une prochaine partie
         }
         saveCSV(jeu,"save/"+filename+".csv");
     }
@@ -378,6 +469,7 @@ class CourseAuxPt extends Program{
         }
         return joueurs;
     }
+
     String listerSave(String[] listeSave){
         String res = "";
         String save;
@@ -387,28 +479,34 @@ class CourseAuxPt extends Program{
         }
         return res;
     }
+
     void algorithm(){
         clearScreen();
         Joueur[] joueurs = creationJoueurs();
         Case[][] plateau = initialiserPlateau();
         int idxTourJoueur = 0;
+        int[] cooStar = donneIdxStar(plateau); 
         clearScreen();
-        while(joueurs[0].nbStar<1 && joueurs[1].nbStar<1){
-            affichageStatPartie(joueurs,idxTourJoueur);
-            println(plateauToString(plateau,joueurs));
-            controleSaisi(joueurs,idxTourJoueur,plateau);
+        int nbTours = nbToursPartie();
+        while(nbTours > 0){
+            String plateauAffichable = plateauToString(plateau,joueurs);
+            controleSaisi(joueurs,idxTourJoueur,plateau,plateauAffichable);
             clearScreen();
             affichageStatPartie(joueurs,idxTourJoueur);
             println(plateauToString(plateau,joueurs));
             poseQuestion(joueurs[idxTourJoueur],"questions.csv");
-            delay(3000);
+            delay(2000);
             clearScreen();
-            verifStar(joueurs[idxTourJoueur], donneCaseJoueur(joueurs[idxTourJoueur],plateau));
+            if(joueurSurStar(cooStar,joueurs[idxTourJoueur].position)){
+                verifStar(joueurs[idxTourJoueur],plateau,cooStar);
+                cooStar = donneIdxStar(plateau);
+            }  
             idxTourJoueur++;
             if(idxTourJoueur>length(joueurs)-1){
                 idxTourJoueur=0;
             }
+            nbTours--;
         }
-        println(maxStar(joueurs).nom + " a Gagné !");
+        println(maxStar(joueurs) + " a Gagné !");
     }
 }
