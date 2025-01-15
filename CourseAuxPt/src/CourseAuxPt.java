@@ -42,7 +42,7 @@ class CourseAuxPt extends Program{
     }
     
     Joueur saisiJoueur(String nom){ //  Définit un joueur avec le nom entrée en paramètre
-        return newJoueur(nom, new int[]{0,0},0 , 10000000);
+        return newJoueur(nom, new int[]{0,0},0 , 0);
     }
 
     Joueur[] creationJoueurs(){ //  Crée un tableau de l'enssemble des joueurs de la partie
@@ -93,7 +93,7 @@ class CourseAuxPt extends Program{
     }
 
     Case[][] initialiserPlateau(){ //  Crée un plateau en suivant le plan donnée par plateau.csv
-        CSVFile p = loadCSV("plateau.csv");
+        CSVFile p = loadCSV("ressources/plateau.csv");
         int nbRow = rowCount(p);
         int nbCol = columnCount(p);
         Case[][] plateau = new Case[nbRow][nbCol];
@@ -109,7 +109,7 @@ class CourseAuxPt extends Program{
         return joueur1.position[0]==x && joueur1.position[1]==y;
     }
 
-    String tableauLigneCase(String[] ligne){
+    String tableauLigneCase(String[] ligne){ //Renvoie une ligne de case sous forme de String 
         String res="";
         for(int i = 0; i < length(ligne) ;i++){
             res+=ligne[i]+"\n";
@@ -185,23 +185,14 @@ class CourseAuxPt extends Program{
         boolean valide = false;
         int nbTours = 0;
         while(!valide){
-            println("Combiez de tours voulez-vous que la Partie dure ?");
-            nbTours = readInt();
-            if(nbTours > 0 && nbTours <= 100){
+            nbTours = controleSaisi(0,1000,"Combiez de tours voulez-vous que la Partie dure ?");
+            if(nbTours >= 10 && nbTours <= 100){
                 valide = true;
             }else{
-                println("Le nombre de tours ne peut pas être plus de 100");
+                println("Le nombre de tours ne peut pas être moins de 10 et plus de 100");
             }
         }
         return nbTours;
-    }
-
-    String inventaireToString(Objet[] inv){
-        String res="Inventaire\n\n";
-        for(int i = 0; i<length(inv); i++){
-            res+=i+1+")  "+inv[i].icon+"  "+inv[i].nom+"\n";
-        }
-        return res;
     }
 
     Case donneCaseJoueur(Joueur j, Case[][] plateau){ //  Renvoie l'objet Case sur laquelle est l'objet Joueur j 
@@ -227,16 +218,16 @@ class CourseAuxPt extends Program{
 
     void realiseDepla(Case[][] plateau, Joueur j ,char depla){ //  Réalise le déplacement du Joueur J dans la direction depla
         int[] deplacement = new int[2];
-        if(depla == 'g' ){
+        if(depla == 'q' ){
             deplacement[0] = 0;
             deplacement[1] = -1;
-        }else if(depla == 'h'){
+        }else if(depla == 'z'){
             deplacement[0] = -1;
             deplacement[1] = 0;
         }else if(depla == 'd'){
             deplacement[0] = 0;
             deplacement[1] = 1;              
-        }else if(depla == 'b'){
+        }else if(depla == 's'){
             deplacement[0] = 1;
             deplacement[1] = 0;               
         }    
@@ -259,7 +250,7 @@ class CourseAuxPt extends Program{
         }
     }
 
-    int[] donneIdxStar(Case[][] plateau){
+    int[] donneIdxStar(Case[][] plateau){ // Donne les coordonnées de l'étoile sur le plateau
         int[] coo = new int[2];
         for(int i = 0; i<length(plateau,1); i++){
             for(int j = 0; j<length(plateau,2); j++){
@@ -272,7 +263,7 @@ class CourseAuxPt extends Program{
         return coo;
     }
 
-    int[] donneCooRandom(int lengthX, int lengthY){
+    int[] donneCooRandom(int lengthX, int lengthY){ //Donne des coordonnée aléatoire dans les intervales 0,lengthX et 0,lengthY
         int x = (int)(lengthX*random());
         int y = (int)(lengthY*random());
         int[] coo = new int[]{x,y};
@@ -321,7 +312,7 @@ class CourseAuxPt extends Program{
     }
 
     void affichageStatPartie(Joueur[] joueurs, int tour){
-        println("Tour de " + PIONS[tour] +joueurs[tour].nom);
+        println("Tour de " + joueurs[tour].nom + " " + PIONS[tour]);
         for(int i = 0; i<length(joueurs) ; i++){
             println("   "+ PIONS[i] + " - " + joueurs[i].nom + " " + joueurs[i].points + "pt " + joueurs[i].nbStar + "★");
         }
@@ -351,24 +342,24 @@ class CourseAuxPt extends Program{
 
     void controleSaisi(Joueur[] joueurs,int idxJ,Case[][] plateau,String plateauAffichable){ //  Contrôle la saisi du joueur et réalise des actions en fonction de la saisie
         boolean valide = false;
-        clearScreen();
         while(!valide){
+            clearScreen();
             affichageStatPartie(joueurs,idxJ);
             println(plateauAffichable);
-            println("g - Aller sur la case à gauche \nh - Aller sur la case en haut \nd - Aller sur la case à droite \nb - Aller sur la case en bas \ns - Pour Sauvegarder \ni - Pour accéder à l'inventaire");
+            println("q - Aller sur la case à gauche \nz - Aller sur la case en haut \nd - Aller sur la case à droite \ns - Aller sur la case en bas \nc - Pour Sauvegarder \ni - Pour accéder à l'inventaire");
             println("Entrez une lettre pour réaliser une action :");
             String temp = toLowerCase(readString());
             if(temp != "" && length(temp) < 2){
                 char entree = charAt(temp,0);
-                if(entree == 's'){
+                if(entree == 'c'){
                     sauvegarde(joueurs,idxJ);
                     clearScreen();
-                }else if((entree == 'g' || entree == 'h'|| entree == 'd' ||entree == 'b') && deplacementValide(plateau, joueurs[idxJ] , entree)){
+                }else if((entree == 'q' || entree == 'z'|| entree == 's' ||entree == 'd') && deplacementValide(plateau, joueurs[idxJ] , entree)){
                     realiseDepla(plateau ,joueurs[idxJ] ,entree);
                     valide = true;
                 }else if(entree == 'i'){
                     clearScreen();
-                    println(inventaireToString(joueurs[idxJ].inventaire));
+                    utilisationInventaire(joueurs, idxJ);
                     println("Appuyer sur Entrer pour quitter l'inventaire");
                     readString();
                 }else{
@@ -383,12 +374,10 @@ class CourseAuxPt extends Program{
     }
 
     int controleNbJoueur(){
-        println("Entrez le nombre de joueur");
-        int nbJoueur = readInt();
+        int nbJoueur = controleSaisi(0, 100, "Entrée le nombre de joueur");
         while(nbJoueur < 2 || nbJoueur > 4){
-            println("Entrez invalide le nombre de joueurs doit être entre 2 et 4");
-            println("Entrez le nombre de joueur");
-            nbJoueur = readInt();
+            println("Entrée invalide le nombre de joueurs doit être entre 2 et 4");
+            nbJoueur = controleSaisi(0, 100, "Entrez le nombre de joueur");
         }
         return nbJoueur;
     }
@@ -396,14 +385,37 @@ class CourseAuxPt extends Program{
     int controleSaisi(int idxDeb,int idxFin,String question){//Controle si l'indexe saisie est dans la liste et est valide 
         println(question);
         String temp = readString();
-        int val = stringToInt(temp);
-        while(val < idxDeb || val >= idxFin){
-            println("Entrée invalide !");
-            println(question);
-            temp = readString();
-            val = stringToInt(temp);
+        boolean valide = false;
+        int val = -999;
+        while(!valide){
+            if(estInt(temp)){
+                val = stringToInt(temp);
+                if(val >= idxDeb || val <= idxFin){
+                    valide = true;
+                }else{
+                    println("Entrée invalide !");
+                    println(question);
+                    temp = readString();
+                }
+            }else{
+                    println("Entrée invalide !");
+                    println(question);
+                    temp = readString();
+            }
         }
         return val;
+    }
+
+    boolean estInt(String truc){// verifie si un String entré en paramètre peut être transformer en Int avec la fonction StringToInt()
+        boolean valide = true;
+        int idx = 0;
+        while(valide && idx < length(truc)){
+            if(charAt(truc,idx) < '0' || charAt(truc,idx) > '9'){
+                valide = false;
+            }
+            idx++;
+        }
+        return valide;
     }
 
     boolean controleValidation(String question){
@@ -483,13 +495,21 @@ class CourseAuxPt extends Program{
         return res;
     }
 
+    Effet StringToEffet(String temp){
+        Effet ef = Effet.NULL;
+        if(equals(temp,"VOLER")){
+            ef = Effet.VOLER;
+        }
+        return ef;
+    }
+
     Objet[] chargerObjet(){
-        CSVFile save = loadCSV("objet.csv");
+        CSVFile save = loadCSV("ressources/objet.csv");
         Objet[] objets = new Objet[rowCount(save)];
         for(int i = 0; i<length(objets) ;i++){
             String nom = getCell(save,i,0);
             String icon = getCell(save,i,1);
-            Effet effet = Effet.VOLER ;//StringToEffet(getCell(save,i,2));
+            Effet effet = StringToEffet(getCell(save,i,2));
             int effet_value = stringToInt(getCell(save,i,3));
             boolean actif = false;
             objets[i] = newObjet(nom , icon, effet, effet_value, actif );
@@ -497,6 +517,14 @@ class CourseAuxPt extends Program{
         return objets;
     }
     
+    String inventaireToString(Objet[] inv){
+        String res="Inventaire\n\n";
+        for(int i = 0; i<length(inv); i++){
+            res+=i+1+")  "+inv[i].icon+"  "+inv[i].nom+"\n";
+        }
+        return res;
+    }
+
     void ajoutObjet(Joueur j,Objet o){
         Objet[] newInv = new Objet[length(j.inventaire)+1];
         for(int i = 0; i<length(j.inventaire); i++){
@@ -516,6 +544,39 @@ class CourseAuxPt extends Program{
         j.inventaire = newInv;
     }
 
+    void utilisationInventaire(Joueur[] joueurs, int idxUtilisateur){
+        println(inventaireToString(joueurs[idxUtilisateur].inventaire));
+        if(length(joueurs[idxUtilisateur].inventaire) > 0 && controleValidation("Voulez-vous utiliser un objet ? (o/n)") ){
+            clearScreen();
+            println(inventaireToString(joueurs[idxUtilisateur].inventaire));
+            int temp = controleSaisi(1, length(joueurs[idxUtilisateur].inventaire),"Quel objet voulez-vous utiliser ?")-1;
+            joueurs[idxUtilisateur].inventaire[temp].actif = true;
+            gestionInventaire(joueurs, idxUtilisateur);
+        }
+    }
+
+    void gestionInventaire(Joueur[] joueurs, int idxJ){
+        for(int i = 0; i < length(joueurs[idxJ].inventaire); i++){
+            if(joueurs[idxJ].inventaire[i].actif){
+                utilisationEffet(joueurs, idxJ, i);
+                suprObjet(joueurs[idxJ],i);
+            }
+        }
+    }
+
+    void utilisationEffet(Joueur[] joueurs, int idxJ, int indxObj, Case[]){
+        if(joueurs[idxJ].inventaire[indxObj].effet == Effet.VOLER){
+            clearScreen();
+            volePoint(joueurs, joueurs[idxJ].inventaire[indxObj].effet_value, idxJ);
+        }else if(joueurs[idxJ].inventaire[indxObj].effet == Effet.TELEPORTER){
+            if(joueurs[idxJ].inventaire[indxObj].effet_value == 0){
+                teleportJoueur(joueurs);
+            }else{
+                teleportStar();
+            }
+        }
+    }
+
     void volePoint(Joueur[] joueurs, int qt, int idxUser){
         String res = "";
         int idx = 1;
@@ -526,14 +587,14 @@ class CourseAuxPt extends Program{
             }
         }
         println(res);
-        int temp = controleSaisi(0, length(joueurs),"Quel joueur voulez-vous voler ?");
+        int temp = controleSaisi(1, length(joueurs),"Quel joueur voulez-vous voler ?");
         if(temp >= idxUser){
             temp ++;
         }
         joueurs[temp-1].points-=qt;
         joueurs[idxUser].points+=qt;
     }
-
+    
     void algorithm(){
         clearScreen();
         Joueur[] joueurs = creationJoueurs();
@@ -548,7 +609,7 @@ class CourseAuxPt extends Program{
             clearScreen();
             affichageStatPartie(joueurs,idxTourJoueur);
             println(plateauToString(plateau,joueurs));
-            poseQuestion(joueurs[idxTourJoueur],"questions.csv");
+            poseQuestion(joueurs[idxTourJoueur],"ressources/questions.csv");
             delay(2000);
             clearScreen();
             if(joueurSurStar(cooStar,joueurs[idxTourJoueur].position)){
@@ -560,7 +621,6 @@ class CourseAuxPt extends Program{
                 idxTourJoueur=0;
             }
             nbTours--;
-             volePoint(joueurs, 6666, 0);
         }
         println(maxStar(joueurs) + " a Gagné !");
     }
