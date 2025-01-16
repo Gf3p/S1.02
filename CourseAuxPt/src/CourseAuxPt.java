@@ -359,7 +359,7 @@ class CourseAuxPt extends Program{
                     valide = true;
                 }else if(entree == 'i'){
                     clearScreen();
-                    utilisationInventaire(joueurs, idxJ);
+                    utilisationInventaire(joueurs, idxJ, plateau );
                     println("Appuyer sur Entrer pour quitter l'inventaire");
                     readString();
                 }else{
@@ -544,39 +544,39 @@ class CourseAuxPt extends Program{
         j.inventaire = newInv;
     }
 
-    void utilisationInventaire(Joueur[] joueurs, int idxUtilisateur){
+    void utilisationInventaire(Joueur[] joueurs, int idxUtilisateur,Case[][] plateau){
         println(inventaireToString(joueurs[idxUtilisateur].inventaire));
         if(length(joueurs[idxUtilisateur].inventaire) > 0 && controleValidation("Voulez-vous utiliser un objet ? (o/n)") ){
             clearScreen();
             println(inventaireToString(joueurs[idxUtilisateur].inventaire));
             int temp = controleSaisi(1, length(joueurs[idxUtilisateur].inventaire),"Quel objet voulez-vous utiliser ?")-1;
             joueurs[idxUtilisateur].inventaire[temp].actif = true;
-            gestionInventaire(joueurs, idxUtilisateur);
+            gestionInventaire(joueurs, idxUtilisateur, plateau);
         }
     }
 
-    void gestionInventaire(Joueur[] joueurs, int idxJ){
+    void gestionInventaire(Joueur[] joueurs, int idxJ,Case[][] plateau){
         for(int i = 0; i < length(joueurs[idxJ].inventaire); i++){
             if(joueurs[idxJ].inventaire[i].actif){
-                utilisationEffet(joueurs, idxJ, i);
+                utilisationEffet(joueurs, idxJ, i, plateau);
                 suprObjet(joueurs[idxJ],i);
             }
         }
     }
 
-    void utilisationEffet(Joueur[] joueurs, int idxJ, int indxObj, Case[]){
+    void utilisationEffet(Joueur[] joueurs, int idxJ, int indxObj, Case[][] plateau){
         if(joueurs[idxJ].inventaire[indxObj].effet == Effet.VOLER){
             clearScreen();
             volePoint(joueurs, joueurs[idxJ].inventaire[indxObj].effet_value, idxJ);
         }else if(joueurs[idxJ].inventaire[indxObj].effet == Effet.TELEPORTER){
             if(joueurs[idxJ].inventaire[indxObj].effet_value == 0){
-                teleportJoueur(joueurs);
+                teleportJoueur(joueurs, plateau);
             }else{
                 teleportStar();
             }
         }
     }
-
+    
     void volePoint(Joueur[] joueurs, int qt, int idxUser){
         String res = "";
         int idx = 1;
@@ -595,6 +595,26 @@ class CourseAuxPt extends Program{
         joueurs[idxUser].points+=qt;
     }
     
+    void teleportJoueur(Joueur[] joueurs, Case[][] plateau){
+        int[] randomCoo = donneCooRandom(length(plateau,1),length(plateau,2));
+        Case randomCase=plateau[randomCoo[0]][randomCoo[1]];
+        while(!randomCase.accessible && !equals(randomCase.contenu,"Star")){
+            randomCoo = donneCooRandom(length(plateau,1),length(plateau,2));
+            randomCase = plateau[randomCoo[0]][randomCoo[1]];
+        }
+        String res = "";
+        for(int i = 1; i < length(joueurs)+1; i++){
+            res += i+") "+joueurs[i-1].nom+"\n";
+        }
+        println(res);
+        int temp = controleSaisi(1, length(joueurs),"Quel joueur voulez-téléporter ?");
+        joueurs[temp-1].position = randomCoo;
+    }
+
+    void teleportStar(){
+
+    }
+
     void algorithm(){
         clearScreen();
         Joueur[] joueurs = creationJoueurs();
@@ -621,6 +641,7 @@ class CourseAuxPt extends Program{
                 idxTourJoueur=0;
             }
             nbTours--;
+            teleportJoueur(joueurs, plateau);
         }
         println(maxStar(joueurs) + " a Gagné !");
     }
