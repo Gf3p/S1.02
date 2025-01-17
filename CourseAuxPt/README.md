@@ -1,12 +1,14 @@
 Course Aux Points
 ===========
 
-Développé par <prénom1 nom1> <prénom2 nom2>
-Contacts : <mail1> , <mail2>
+Développé par Angèl Zheng et Mark Zavadskyi
+Contacts : angel.zheng.etu@univ-lille.fr , mark.zavadskyi.etu@univ-lille.fr
 
-# Présentation de <le nom de votre jeu>
+# Présentation de Course aux points
 
-<Description de votre jeu>
+Le jeu fait s'affronter 2 à 4 joueurs, le but est d'obtenir un maximum d'étoiles avant le nombre maximale de tours définis par les joueurs.
+Les étoiles devrons s'échanger contre des points, points obtenus en répondant à des question. Plus le joueur répond vite plus il gagne de points
+ 
 Des captures d'écran illustrant le fonctionnement du logiciel sont proposées dans le répertoire shots.
 
 
