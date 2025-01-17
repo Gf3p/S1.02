@@ -215,10 +215,6 @@ class CourseAuxPt extends Program{
             valide = true;              
         }else if(depla == 's'&& posJoueur.directions[3]){
             valide = true;               
-        }else{
-            clearScreen();
-            println("Impossible de se déplacer dans cette direction !");
-            delay(1000);
         }
         return valide;
     }
@@ -365,11 +361,17 @@ class CourseAuxPt extends Program{
                 if(entree == 'c'){
                     sauvegarde(joueurs,idxJ);
                     clearScreen();
-                }else if((entree == 'q' || entree == 'z'|| entree == 's' ||entree == 'd') && deplacementValide(plateau, joueurs[idxJ] , entree)){
-                    affichageStatPartie(joueurs,idxJ);
-                    println(plateauAffichable);
-                    realiseDepla(plateau ,joueurs[idxJ] ,entree);
-                    valide = true;
+                }else if((entree == 'q' || entree == 'z'|| entree == 's' ||entree == 'd') ){
+                    if(deplacementValide(plateau, joueurs[idxJ] , entree)){
+                        affichageStatPartie(joueurs,idxJ);
+                        println(plateauAffichable);
+                        realiseDepla(plateau ,joueurs[idxJ] ,entree);
+                        valide = true;
+                    }else{
+                        clearScreen();
+                        println("Impossible de se déplacer dans cette direction !");
+                        delay(1000);
+                    }
                 }else if(entree == 'i'){
                     clearScreen();
                     utilisationInventaire(joueurs, idxJ, plateau );
@@ -740,6 +742,52 @@ class CourseAuxPt extends Program{
         clearScreen();
     }
 
+    void testPlateauToString(){
+        Joueur j = newJoueur("nom",new int[]{0,0},0 , 0);
+        Joueur[] joueurs = new Joueur[]{j};
+        Case c = newCase(new boolean[]{false,false,false,false},"",false);;
+        Case[][] plateau = new Case[1][1];
+        plateau[0][0] = c;
+        assertEquals(plateauToString(plateau,joueurs),"+ - - - +\n|♙      |\n|       |\n|       |\n+ - - - +\n");
+        joueurs = new Joueur[]{j};
+        c = newCase(new boolean[]{true,true,true,true},"",true);;
+        plateau[0][0] = c;
+        assertEquals(plateauToString(plateau,joueurs),"+ - - - +\n|♙  ↑   |\n|←     →|\n|   ↓   |\n+ - - - +\n");
+    }
+
+    void testedePlacementValide(){
+        Joueur j = newJoueur("nom",new int[]{0,0},0 , 0);
+        Case c = newCase(new boolean[]{false,false,false,false},"",false);;
+        Case[][] plateau = new Case[1][1];
+        plateau[0][0] = c;
+        assertFalse(deplacementValide(plateau, j ,'z'));
+        c = newCase(new boolean[]{true,true,true,true},"",true);;
+        plateau[0][0] = c;
+        assertTrue(deplacementValide(plateau, j ,'s'));
+    }
+
+    void testInventaireToString(){
+        Objet[] inv = new Objet[]{listeDesObjets[0],listeDesObjets[1]};
+        assertEquals("Inventaire\n\n1)  🧲  aspirateur à points\n",inventaireToString(inv));
+        inv = new Objet[]{listeDesObjets[0]};
+        assertEquals("Inventaire\n\n",inventaireToString(inv));
+    }
+
+    void testAjoutObjet(){
+        Objet[] inv = new Objet[]{listeDesObjets[0],listeDesObjets[1]};
+        Joueur j = newJoueur("nom",new int[]{0,0},0 , 0);
+        ajoutObjet(j,listeDesObjets[1]);
+        assertArrayEquals(j.inventaire,inv);
+    }
+
+    void testSuprObjet(){
+        Objet[] inv = new Objet[]{listeDesObjets[0]};
+        Joueur j = newJoueur("nom",new int[]{0,0},0 , 0);
+        j.inventaire = new Objet[]{listeDesObjets[0],listeDesObjets[1]};
+        suprObjet(j,1);
+        assertArrayEquals(j.inventaire,inv);
+    }
+
     void algorithm(){
         ecranTitre();
         Joueur[] joueurs = creationJoueurs();
@@ -755,7 +803,7 @@ class CourseAuxPt extends Program{
             println(plateauToString(plateau,joueurs));
             actionContenuCase(joueurs[idxTourJoueur], plateau );
             poseQuestion(joueurs[idxTourJoueur],"ressources/questions.csv");
-            delay(2);
+            delay(2500);
             clearScreen();
             idxTourJoueur++;
             if(idxTourJoueur>length(joueurs)-1){
